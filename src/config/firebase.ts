@@ -15,10 +15,24 @@ const initializeFirebase = () => {
     return admin.app();
   }
 
-  // Check if service account file path is provided
+  // Try to load from environment variables first
+  if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    const serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // Replace escaped newlines with actual newlines
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    };
+
+    return admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.projectId}.appspot.com`,
+    });
+  }
+
+  // Fall back to service account JSON file
   const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './firebase-service-account.json';
   
-  // Try to load from service account JSON file
   if (fs.existsSync(serviceAccountPath)) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     
@@ -29,10 +43,9 @@ const initializeFirebase = () => {
   }
 
   throw new Error(
-    'Firebase service account file not found. Please:\n' +
-    '1. Download your service account JSON from Firebase Console\n' +
-    '2. Save it as "firebase-service-account.json" in the project root, or\n' +
-    '3. Set GOOGLE_APPLICATION_CREDENTIALS env variable to the file path'
+    'Firebase credentials not found. Please either:\n' +
+    '1. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables, or\n' +
+    '2. Download your service account JSON from Firebase Console and save it as "firebase-service-account.json"'
   );
 };
 
