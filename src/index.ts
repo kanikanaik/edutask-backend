@@ -22,6 +22,9 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - Required for Vercel and other reverse proxies
+app.set('trust proxy', 1);
+
 // ============ MIDDLEWARE ============
 
 // CORS configuration - Allow all origins
